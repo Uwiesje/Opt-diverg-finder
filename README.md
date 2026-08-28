@@ -33,6 +33,7 @@ wsl --shutdown
 
 \item Locate the VHDX file belonging to the WSL2 Linux distribution. This file is typically named \texttt{ext4.vhdx} and is stored within the distribution's Windows application data directory.
 
+\item close docker via task-manager
 \item Open Windows PowerShell with administrator privileges and use DiskPart to compact the VHDX:
 \begin{verbatim}
 diskpart
