@@ -32,7 +32,7 @@ wsl --shutdown
 
 \item close docker via task-manager
 
-\item Open Windows PowerShell with administrator privileges and use DiskPart to compact the VHDX:
+\item Open Windows PowerShell with administrator privileges and use DiskPart and the following commands to compact the VHDX:
 
 diskpart
 
