@@ -36,9 +36,9 @@ wsl --shutdown
 \item close docker via task-manager
 \item Open Windows PowerShell with administrator privileges and use DiskPart to compact the VHDX:
 \begin{verbatim}
-diskpart\n
-select vdisk file="C:\path\to\ext4.vhdx"\n
-compact vdisk\n
-exit\n
+diskpart
+select vdisk file="C:\path\to\ext4.vhdx"
+compact vdisk
+exit
 \end{verbatim}
 \item WSL2 can then be started again normally.
