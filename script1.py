@@ -1,20 +1,33 @@
 import sqlite3
 import subprocess
 import os
-import hashlib
 import re
+import csv
+import sys
 
-conn = sqlite3.connect("./avro/arvo.db")
-c = conn.cursor()
-c.execute("""
-    SELECT localId, fuzz_target, crash_type, project
-    FROM arvo
-    WHERE localId="42483745"  
-""")
+def load_cases(db_path, csv_path):
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
 
-# possible by crashtype or localId any table from the arvo database.
-# project="harfbuzz" AND
-data = c.fetchall()
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        local_ids = [row["localId"] for row in reader]
+
+    placeholders = ",".join("?" for _ in local_ids)
+
+    query = f"""
+        SELECT localId, fuzz_target, crash_type, project
+        FROM arvo
+        WHERE localId IN ({placeholders})
+    """
+
+    c.execute(query, local_ids)
+    data = c.fetchall()
+
+    conn.close()
+
+    return data
+
 
 FLAGS = ["-O0", "-O1", "-O2", "-O3"]
 
@@ -138,16 +151,23 @@ def classify(runtime_raw, exit_code):
 
     return "ok"
 
+data = load_cases("./avro/arvo.db", "./all_cases.csv")
+
+start = int(sys.argv[1])
+amount = int(sys.argv[2])
+
+data = data[start:start + amount]
 
 
 results = {}
 
-i = 1
+i = int(sys.argv[1])
 #[10:80] now it runs untill the data base is finished. add [:x] or [Y:X] to control the amount of cases tested. 
 for localId, fuzz_target, crash_type, project in data:
     print(f"\n===== BUG {localId} ({crash_type}) =====")
     print(f"  fuzz_target: {fuzz_target}")
     print(f"project:: {project}")
+    print(i)
     results[localId] = {}
     
     for flag in FLAGS:
@@ -239,15 +259,5 @@ for localId, fuzz_target, crash_type, project in data:
             
             
             
-            
-            
-"""
 
-line 7 give the correct path of the database. different on each pc.
-line 147 to control how much data is being tested.
 
-line 189 AND 160 specify the text.txt file where results will be written to.
-
-remove comments from line 166 to enable the program to write an asan report in your repository.
-
-"""
