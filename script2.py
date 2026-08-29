@@ -1,19 +1,28 @@
 import sqlite3
 import subprocess
 import os
-import hashlib
 import re
+import sys
 
-conn = sqlite3.connect("./avro/arvo.db")
-c = conn.cursor()
-c.execute("""
-    SELECT localId, fuzz_target, crash_type, project
-    FROM arvo
-    WHERE localId="42475836"
-""")
-#openthread 37
-# project="harfbuzz" AND
-data = c.fetchall()
+
+def load_case(db_path, local_id):
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+
+    query = """
+        SELECT localId, fuzz_target, crash_type, project
+        FROM arvo
+        WHERE localId = ?
+    """
+
+    c.execute(query, (local_id,))
+    data = c.fetchall()
+
+    conn.close()
+    return data
+
+
+
 
 
 def run_cmd(cmd, binary=False):
@@ -71,6 +80,7 @@ ASAN_OPTIONS=detect_leaks=0:abort_on_error=0:color=always:halt_on_error=0 \
 
 apt-get install -y gdb -qq 2>/dev/null
 
+echo "launch gdb"
 echo "set auto-load safe-path /" >> /root/.gdbinit
 echo "set pagination off" >> /root/.gdbinit
 ASAN_OPTIONS=abort_on_error=1:detect_leaks=0:halt_on_error=0 gdb -q \\
@@ -89,15 +99,16 @@ ASAN_OPTIONS=abort_on_error=1:detect_leaks=0:halt_on_error=0 gdb -q \\
     subprocess.run(cmd)  
 
 
-for localId, fuzz_target, crash_type, project in data[:1]:
-    build_and_run(localId, "-O1", fuzz_target)
+db_path = sys.argv[1]
+local_id = sys.argv[2]
+optimization = sys.argv[3]
 
+data = load_case(db_path, local_id)
 
-""" 
-line 94 second parameter, change the optimization flags to the one needed analyzing. 
-line 12 change the localId to the case needing analyzing.
-line 7 change the path to the arvo database. 
-line 68 to 71 write a report in you repository. remove if not necessary. 
-line 36 sets limit of memory for the docker container. the Default is 8196 if the line is removed. 
+if not data:
+    raise ValueError(f"No case found with localId {local_id}")
 
-""" 
+localId, fuzz_target, crash_type, project = data[0]
+print(data[0])
+
+build_and_run(localId, optimization, fuzz_target)
